@@ -62,6 +62,7 @@ This document lays out the current public properties and methods for the React N
 - [`allowsLinkPreview`](Reference.md#allowsLinkPreview)
 - [`sharedCookiesEnabled`](Reference.md#sharedCookiesEnabled)
 - [`textZoom`](Reference.md#textZoom)
+- [`autoManageStatusBarEnabled`](Reference.md#autoManageStatusBarEnabled)
 
 ## Methods Index
 
@@ -1090,6 +1091,20 @@ When setting the standard textZoom (100) parameter size, this undesirable effect
 Example:
 
 `<WebView textZoom={100} />`
+
+---
+
+### `autoManageStatusBarEnabled`
+
+If the user watch fullscreen video in WebView then StatusBar will be light. The default value is `true`.
+
+| Type   | Required | Platform |
+| ------ | -------- | -------- |
+| number | No       | iOS      |
+
+Example:
+
+`<WebView autoManageStatusBarEnabled={false} />`
 
 ## Methods
 
