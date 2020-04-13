@@ -116,6 +116,26 @@ export interface WebViewHttpError extends WebViewNativeEvent {
   statusCode: number;
 }
 
+export interface WebViewContextMenu extends WebViewNativeEvent{
+  index: number;
+}
+
+export interface WebViewContextMenuItem{
+  /**
+   * title of menu item
+   */
+  title: string;
+  /**
+   * specify lookup menu item
+   * which is executed from native only
+   */
+  lookup?: boolean;
+  /**
+   * handle press event
+   */
+  onPress: Function;
+}
+
 export type WebViewEvent = NativeSyntheticEvent<WebViewNativeEvent>;
 
 export type WebViewProgressEvent = NativeSyntheticEvent<
@@ -131,6 +151,8 @@ export type WebViewErrorEvent = NativeSyntheticEvent<WebViewError>;
 export type WebViewTerminatedEvent = NativeSyntheticEvent<WebViewNativeEvent>;
 
 export type WebViewHttpErrorEvent = NativeSyntheticEvent<WebViewHttpError>;
+
+export type WebViewContextMenuEvent = NativeSyntheticEvent<WebViewContextMenu>;
 
 export type DataDetectorTypes =
   | 'phoneNumber'
@@ -237,6 +259,9 @@ export interface CommonNativeWebViewProps extends ViewProps {
    * Append to the existing user-agent. Overriden if `userAgent` is set.
    */
   applicationNameForUserAgent?: string;
+  onContextMenuItemPress: (event: WebViewContextMenuEvent) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  contextMenuItems?: any
 }
 
 export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
@@ -736,4 +761,10 @@ export interface WebViewSharedProps extends ViewProps {
    * Should caching be enabled. Default is true.
    */
   cacheEnabled?: boolean;
+
+  /**
+   * Set this to show webview context menu item
+   * whenever user long pressed on webview
+   */
+  contextMenuItems?: WebViewContextMenuItem[];
 }

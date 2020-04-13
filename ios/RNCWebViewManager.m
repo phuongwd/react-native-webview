@@ -69,6 +69,13 @@ RCT_EXPORT_VIEW_PROPERTY(messagingEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(onMessage, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onScroll, RCTDirectEventBlock)
 
+
+/**
+ * Expose context menu items
+ */
+RCT_EXPORT_VIEW_PROPERTY(contextMenuItems, NSArray)
+RCT_EXPORT_VIEW_PROPERTY(onContextMenuItemPress, RCTDirectEventBlock)
+
 RCT_EXPORT_METHOD(postMessage:(nonnull NSNumber *)reactTag message:(NSString *)message)
 {
   [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCWebView *> *viewRegistry) {
