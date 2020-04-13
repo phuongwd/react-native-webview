@@ -323,7 +323,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       }
     }
 
-    const extractedWeViewMenuItems = extractWebViewContextMenuItems(contextMenuItems);
+    const extractedWebViewMenuItems = extractWebViewContextMenuItems(contextMenuItems);
 
     const NativeWebView
       = (nativeConfig.component as typeof NativeWebViewAndroid) || RNCWebView;
@@ -351,7 +351,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}
         style={webViewStyles}
-        contextMenuItems={extractedWeViewMenuItems}
+        contextMenuItems={extractedWebViewMenuItems}
         onContextMenuItemPress={this.onContextMenuItemPress}
         {...nativeConfig.props}
       />

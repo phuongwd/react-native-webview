@@ -336,7 +336,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
 
     const decelerationRate = processDecelerationRate(decelerationRateProp);
 
-    const extractedWeViewMenuItems = extractWebViewContextMenuItems(contextMenuItems);
+    const extractedWebViewMenuItems = extractWebViewContextMenuItems(contextMenuItems);
 
     const NativeWebView
       = (nativeConfig.component as typeof NativeWebViewIOS | undefined)
@@ -361,7 +361,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
         // TODO: find a better way to type this.
         source={resolveAssetSource(this.props.source as ImageSourcePropType)}
         style={webViewStyles}
-        contextMenuItems={extractedWeViewMenuItems}
+        contextMenuItems={extractedWebViewMenuItems}
         onContextMenuItemPress={this.onContextMenuItemPress}
         {...nativeConfig.props}
       />

@@ -342,7 +342,7 @@ static NSDictionary* customCertificatesForHost;
     NSMutableArray *menuItems = [NSMutableArray arrayWithCapacity:[_contextMenuItems count]];
     int index = 0;
     for(NSDictionary *item in _contextMenuItems){
-        NSString *sel = [NSString stringWithFormat:@"GAMenuItem_%d", index];
+        NSString *sel = [NSString stringWithFormat:@"CTMenuItem_%d", index];
         [menuItems addObject:[[UIMenuItem alloc] initWithTitle:[item objectForKey:@"title"] action:NSSelectorFromString(sel)]];
         index++;
     }
@@ -360,7 +360,7 @@ static NSDictionary* customCertificatesForHost;
     }];
 }
 
-- (void)tappedGAMenuItem:(NSInteger)index {
+- (void)tappedCTMenuItem:(NSInteger)index {
     
     NSDictionary *itemInfo = [_contextMenuItems objectAtIndex:index];
     if([[itemInfo objectForKey:@"lookup"] boolValue] == true){
@@ -376,7 +376,7 @@ static NSDictionary* customCertificatesForHost;
 
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender {
     NSString *sel = NSStringFromSelector(action);
-    NSRange match = [sel rangeOfString:@"GAMenuItem_"];
+    NSRange match = [sel rangeOfString:@"CTMenuItem_"];
     if (match.location == 0) {
         return YES;
     }
@@ -387,15 +387,15 @@ static NSDictionary* customCertificatesForHost;
     if ([super methodSignatureForSelector:sel]) {
         return [super methodSignatureForSelector:sel];
     }
-    return [super methodSignatureForSelector:@selector(tappedGAMenuItem:)];
+    return [super methodSignatureForSelector:@selector(tappedCTMenuItem:)];
 }
 
 - (void)forwardInvocation:(NSInvocation *)invocation {
-    NSString *selectorKey = @"GAMenuItem_";
+    NSString *selectorKey = @"CTMenuItem_";
     NSString *sel = NSStringFromSelector([invocation selector]);
     NSRange match = [sel rangeOfString:selectorKey];
     if (match.location == 0) {
-        [self tappedGAMenuItem:[[sel substringFromIndex:[selectorKey length]] integerValue]];
+        [self tappedCTMenuItem:[[sel substringFromIndex:[selectorKey length]] integerValue]];
     } else {
         [super forwardInvocation:invocation];
     }
