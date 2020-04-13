@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.Manifest;
@@ -16,8 +17,13 @@ import android.os.Build;
 import android.os.Environment;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
+
+import android.os.Handler;
 import android.text.TextUtils;
+import android.view.ActionMode;
 import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
@@ -39,6 +45,9 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
+import com.facebook.react.bridge.ReadableNativeMap;
+import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.WritableNativeArray;
 import com.facebook.react.views.scroll.ScrollEvent;
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.facebook.react.views.scroll.OnScrollDispatchHelper;
@@ -59,6 +68,7 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.ContentSizeChangeEvent;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.EventDispatcher;
+import com.reactnativecommunity.webview.events.TopContextMenuEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
@@ -76,6 +86,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -532,6 +543,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     ((RNCWebView) view).setHasScrollEvent(hasScrollEvent);
   }
 
+  @ReactProp(name="contextMenuItems")
+  public void setContextMenuItems(WebView view, ReadableArray items){
+    ((RNCWebView)view).setContextMenuItems(items);
+  }
+
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
@@ -548,6 +564,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopShouldStartLoadWithRequestEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldStartLoadWithRequest"));
     export.put(ScrollEventType.getJSEventName(ScrollEventType.SCROLL), MapBuilder.of("registrationName", "onScroll"));
     export.put(TopHttpErrorEvent.EVENT_NAME, MapBuilder.of("registrationName", "onHttpError"));
+    export.put(TopContextMenuEvent.EVENT_NAME, MapBuilder.of("registrationName", "onContextMenuItemPress"));
     return export;
   }
 
@@ -980,7 +997,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
    * Subclass of {@link WebView} that implements {@link LifecycleEventListener} interface in order
    * to call {@link WebView#destroy} on activity destroy event and also to clear the client
    */
-  protected static class RNCWebView extends WebView implements LifecycleEventListener {
+  protected static class RNCWebView extends WebView implements LifecycleEventListener, MenuItem.OnMenuItemClickListener {
     protected @Nullable
     String injectedJS;
     protected boolean messagingEnabled = false;
@@ -989,6 +1006,87 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     protected boolean sendContentSizeChangeEvents = false;
     private OnScrollDispatchHelper mOnScrollDispatchHelper;
     protected boolean hasScrollEvent = false;
+    private ArrayList<HashMap> mContextMenuItems = new ArrayList<>();
+
+    private ActionMode mActionMode;
+    private Handler mActionModeHandler = new Handler();
+
+
+    private RNCWebView webView(){
+      return this;
+    }
+
+    /**
+     *
+     * @param items
+     */
+    public void setContextMenuItems(ReadableArray items){
+      for(int i = 0; i < items.size(); i++) {
+        ReadableMap item = items.getMap(i);
+        HashMap<String, Object> editableItem = item.toHashMap();
+        editableItem.put("index", i); //set id to determine which one is pressed later
+        mContextMenuItems.add(editableItem);
+      }
+    }
+
+
+    @Override
+    public ActionMode startActionMode(ActionMode.Callback callback, int type) {
+      mActionMode =  super.startActionMode(callback, type);
+
+      //clear default menu
+      mActionMode.getMenu().clear();
+
+      //add menu item - NONE INTENT MENU ITEM
+      int menuItemOrder = 100;
+      for(int i = 0; i < mContextMenuItems.size(); i++){
+        HashMap<String,Object> item = mContextMenuItems.get(i);
+        mActionMode.getMenu().add(Menu.NONE, Integer.valueOf(item.get("index").toString()), menuItemOrder, item.get("title").toString())
+          .setOnMenuItemClickListener(this)
+          .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        menuItemOrder++;
+      }
+
+      /**
+       * We check the KITKAT because later we is going to use
+       * 'evaluateJavascript' method of WebView to get the selection text
+       * to search. Otherwise we don't need to show menu
+       * THIS IS INTENT MENU ITEM
+       */
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        for (ResolveInfo resolveInfo : getSupportedActivities()) {
+          Intent intent = createProcessTextIntentForResolveInfo(resolveInfo);
+          mActionMode.getMenu().add(Menu.NONE, Menu.NONE,
+            menuItemOrder,
+            resolveInfo.loadLabel(webView().getContext().getPackageManager()))
+            .setIntent(intent)
+            .setOnMenuItemClickListener(this)
+            .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+
+          menuItemOrder++;
+        }
+      }
+
+      return mActionMode;
+    }
+
+    private Intent createProcessTextIntent() {
+      return new Intent()
+        .setAction(Intent.ACTION_PROCESS_TEXT)
+        .setType("text/plain")
+        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    }
+
+    private List<ResolveInfo> getSupportedActivities() {
+      PackageManager packageManager = this.getContext().getPackageManager();
+      return packageManager.queryIntentActivities(createProcessTextIntent(), 0);
+    }
+
+    private Intent createProcessTextIntentForResolveInfo(ResolveInfo info) {
+      return createProcessTextIntent()
+        .putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
+        .setClassName(info.activityInfo.packageName, info.activityInfo.name);
+    }
 
     /**
      * WebView must be created with an context of the current activity
@@ -1149,6 +1247,38 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     protected void cleanupCallbacksAndDestroy() {
       setWebViewClient(null);
       destroy();
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem item) {
+      //handle item clicked here
+      if(item.getIntent() == null){
+        //dispatch event to js
+        WritableMap eventData = Arguments.createMap();
+        eventData.putInt("index", item.getItemId());
+        dispatchEvent(webView(), new TopContextMenuEvent(webView().getId(), eventData));
+      }else{
+        //handle lookup intent.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+          webView().evaluateJavascript("(function(){return window.getSelection().toString()})()",
+            new ValueCallback<String>()
+            {
+              @Override
+              public void onReceiveValue(String value)
+              {
+                Intent intent = item.getIntent();
+                intent.putExtra(Intent.EXTRA_PROCESS_TEXT, value);
+                webView().getContext().startActivity(intent);
+              }
+            });
+        }
+      }
+      if(mActionMode != null){
+        mActionModeHandler.postDelayed(()->{
+          mActionMode.finish();
+        }, 500);
+      }
+      return true;
     }
 
     protected class RNCWebViewBridge {

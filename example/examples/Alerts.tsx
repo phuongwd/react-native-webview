@@ -53,8 +53,8 @@ const HTML = `
 </html>
 `;
 
-type Props = {};
-type State = {};
+interface Props {}
+interface State {}
 
 export default class Alerts extends Component<Props, State> {
   state = {};
@@ -63,6 +63,27 @@ export default class Alerts extends Component<Props, State> {
     return (
       <View style={{ height: 120 }}>
         <WebView
+          contextMenuItems={
+            [
+              {
+                title: "Highlight",
+                onPress: () => console.log('pressed Highlight')
+              },
+              {
+                title: "Lookup",
+                lookup: true,
+                onPress: () => console.log('pressed Lookup')
+              },
+              {
+                title: "Share",
+                onPress: () => console.log('pressed Share')
+              },
+              {
+                title: "Copy",
+                onPress: () => console.log('pressed Copy')
+              }
+            ]
+          }
           source={{html: HTML}}
           automaticallyAdjustContentInsets={false}
         />

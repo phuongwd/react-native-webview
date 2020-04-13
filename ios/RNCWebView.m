@@ -13,6 +13,17 @@
 
 #import "objc/runtime.h"
 
+
+@interface WKWebView (Custom)
+@end
+@implementation WKWebView (Custom)
+
+- (BOOL)canPerformAction:(SEL)action withSender:(id)sender{
+    return NO;
+}
+
+@end
+
 static NSTimer *keyboardTimer;
 static NSString *const HistoryShimName = @"ReactNativeHistoryShim";
 static NSString *const MessageHandlerName = @"ReactNativeWebView";
@@ -51,6 +62,7 @@ static NSDictionary* customCertificatesForHost;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
 @property (nonatomic, copy) WKWebView *webView;
+@property (nonatomic, copy) RCTDirectEventBlock onContextMenuItemPress;
 @end
 
 @implementation RNCWebView
@@ -319,8 +331,77 @@ static NSDictionary* customCertificatesForHost;
     [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
     [self setKeyboardDisplayRequiresUserAction: _savedKeyboardDisplayRequiresUserAction];
     [self visitSource];
+    [self addCustomContextMenuItem];
   }
 }
+
+#pragma mark - Start Context Menu
+
+- (void)addCustomContextMenuItem{
+    
+    NSMutableArray *menuItems = [NSMutableArray arrayWithCapacity:[_contextMenuItems count]];
+    int index = 0;
+    for(NSDictionary *item in _contextMenuItems){
+        NSString *sel = [NSString stringWithFormat:@"CTMenuItem_%d", index];
+        [menuItems addObject:[[UIMenuItem alloc] initWithTitle:[item objectForKey:@"title"] action:NSSelectorFromString(sel)]];
+        index++;
+    }
+    [UIMenuController sharedMenuController].menuItems = menuItems;
+}
+
+- (void)handleLookup{
+    [_webView evaluateJavaScript:@"(function(){return window.getSelection().toString()})()" completionHandler:^(id _Nullable result, NSError * _Nullable error) {
+        
+        if ([UIReferenceLibraryViewController dictionaryHasDefinitionForTerm:result]) {
+            UIReferenceLibraryViewController* ref =
+                [[UIReferenceLibraryViewController alloc] initWithTerm:result];
+            [[self topViewController] presentViewController:ref animated:YES completion:nil];
+        }
+    }];
+}
+
+- (void)tappedCTMenuItem:(NSInteger)index {
+    
+    NSDictionary *itemInfo = [_contextMenuItems objectAtIndex:index];
+    if([[itemInfo objectForKey:@"lookup"] boolValue] == true){
+        [self handleLookup];
+    }else{
+        NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+        [event addEntriesFromDictionary:@{@"index":[NSNumber numberWithLong:index]}];
+        if(_onContextMenuItemPress){
+            _onContextMenuItemPress(event);
+        }
+    }
+}
+
+- (BOOL)canPerformAction:(SEL)action withSender:(id)sender {
+    NSString *sel = NSStringFromSelector(action);
+    NSRange match = [sel rangeOfString:@"CTMenuItem_"];
+    if (match.location == 0) {
+        return YES;
+    }
+    return NO;
+}
+
+- (NSMethodSignature *)methodSignatureForSelector:(SEL)sel {
+    if ([super methodSignatureForSelector:sel]) {
+        return [super methodSignatureForSelector:sel];
+    }
+    return [super methodSignatureForSelector:@selector(tappedCTMenuItem:)];
+}
+
+- (void)forwardInvocation:(NSInvocation *)invocation {
+    NSString *selectorKey = @"CTMenuItem_";
+    NSString *sel = NSStringFromSelector([invocation selector]);
+    NSRange match = [sel rangeOfString:selectorKey];
+    if (match.location == 0) {
+        [self tappedCTMenuItem:[[sel substringFromIndex:[selectorKey length]] integerValue]];
+    } else {
+        [super forwardInvocation:invocation];
+    }
+}
+
+#pragma mark - End Context Menu
 
 // Update webview property when the component prop changes.
 - (void)setAllowsBackForwardNavigationGestures:(BOOL)allowsBackForwardNavigationGestures {
