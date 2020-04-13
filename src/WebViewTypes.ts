@@ -127,7 +127,10 @@ export interface WebViewContextMenuItem{
   title: string;
   /**
    * specify lookup menu item
-   * which is executed from native only
+   * which is executed from native only on: iOS
+   * 
+   * Android will show all the apps which supports lookup the selection text
+   * at the end of menu
    */
   lookup?: boolean;
   /**
