@@ -16,6 +16,8 @@ import android.os.Build;
 import android.os.Environment;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
+
+import android.os.Handler;
 import android.text.TextUtils;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -983,7 +985,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
    * Subclass of {@link WebView} that implements {@link LifecycleEventListener} interface in order
    * to call {@link WebView#destroy} on activity destroy event and also to clear the client
    */
-  protected static class RNCWebView extends WebView implements LifecycleEventListener {
+  protected static class RNCWebView extends WebView implements LifecycleEventListener, MenuItem.OnMenuItemClickListener {
     protected @Nullable
     String injectedJS;
     protected boolean messagingEnabled = false;
@@ -994,77 +996,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     protected boolean hasScrollEvent = false;
     private ArrayList<HashMap> mContextMenuItems = new ArrayList<>();
 
-    private ActionMode.Callback mCallback = new ActionMode.Callback() {
-      @Override
-      public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-        //add menu item - NONE INTENT MENU ITEM
-        int menuItemOrder = 100;
-        for(int i = 0; i < mContextMenuItems.size(); i++){
-          HashMap<String,Object> item = mContextMenuItems.get(i);
-          menu.add(Menu.NONE, Integer.valueOf(item.get("index").toString()), menuItemOrder, item.get("title").toString())
-            .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-          menuItemOrder++;
-        }
+    private ActionMode mActionMode;
+    private Handler mActionModeHandler = new Handler();
 
-        /**
-         * We check the KITKAT because later we is going to use
-         * 'evaluateJavascript' method of WebView to get the selection text
-         * to search. Otherwise we don't need to show menu
-         * THIS IS INTENT MENU ITEM
-         */
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-          for (ResolveInfo resolveInfo : getSupportedActivities()) {
-            Intent intent = createProcessTextIntentForResolveInfo(resolveInfo);
-            menu.add(Menu.NONE, Menu.NONE,
-              menuItemOrder,
-              resolveInfo.loadLabel(webView().getContext().getPackageManager()))
-              .setIntent(intent)
-              .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-
-            menuItemOrder++;
-          }
-        }
-
-        return true;
-      }
-
-      @Override
-      public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-        return true;
-      }
-
-      @Override
-      public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-        //handle item clicked here
-        if(item.getIntent() == null){
-          //dispatch event to js
-          WritableMap eventData = Arguments.createMap();
-          eventData.putInt("index", item.getItemId());
-          dispatchEvent(webView(), new TopContextMenuEvent(webView().getId(), eventData));
-        }else{
-          //handle lookup intent.
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            webView().evaluateJavascript("(function(){return window.getSelection().toString()})()",
-              new ValueCallback<String>()
-              {
-                @Override
-                public void onReceiveValue(String value)
-                {
-                  Intent intent = item.getIntent();
-                  intent.putExtra(Intent.EXTRA_PROCESS_TEXT, value);
-                  webView().getContext().startActivity(intent);
-                }
-              });
-          }
-        }
-        mode.finish();
-        return true;
-      }
-
-      @Override
-      public void onDestroyActionMode(ActionMode mode) {
-      }
-    };
 
     private RNCWebView webView(){
       return this;
@@ -1086,7 +1020,42 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     @Override
     public ActionMode startActionMode(ActionMode.Callback callback, int type) {
-      return super.startActionMode(mCallback, type);
+      mActionMode =  super.startActionMode(callback, type);
+
+      //clear default menu
+      mActionMode.getMenu().clear();
+
+      //add menu item - NONE INTENT MENU ITEM
+      int menuItemOrder = 100;
+      for(int i = 0; i < mContextMenuItems.size(); i++){
+        HashMap<String,Object> item = mContextMenuItems.get(i);
+        mActionMode.getMenu().add(Menu.NONE, Integer.valueOf(item.get("index").toString()), menuItemOrder, item.get("title").toString())
+          .setOnMenuItemClickListener(this)
+          .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        menuItemOrder++;
+      }
+
+      /**
+       * We check the KITKAT because later we is going to use
+       * 'evaluateJavascript' method of WebView to get the selection text
+       * to search. Otherwise we don't need to show menu
+       * THIS IS INTENT MENU ITEM
+       */
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        for (ResolveInfo resolveInfo : getSupportedActivities()) {
+          Intent intent = createProcessTextIntentForResolveInfo(resolveInfo);
+          mActionMode.getMenu().add(Menu.NONE, Menu.NONE,
+            menuItemOrder,
+            resolveInfo.loadLabel(webView().getContext().getPackageManager()))
+            .setIntent(intent)
+            .setOnMenuItemClickListener(this)
+            .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+
+          menuItemOrder++;
+        }
+      }
+
+      return mActionMode;
     }
 
     private Intent createProcessTextIntent() {
@@ -1266,6 +1235,38 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     protected void cleanupCallbacksAndDestroy() {
       setWebViewClient(null);
       destroy();
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem item) {
+      //handle item clicked here
+      if(item.getIntent() == null){
+        //dispatch event to js
+        WritableMap eventData = Arguments.createMap();
+        eventData.putInt("index", item.getItemId());
+        dispatchEvent(webView(), new TopContextMenuEvent(webView().getId(), eventData));
+      }else{
+        //handle lookup intent.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+          webView().evaluateJavascript("(function(){return window.getSelection().toString()})()",
+            new ValueCallback<String>()
+            {
+              @Override
+              public void onReceiveValue(String value)
+              {
+                Intent intent = item.getIntent();
+                intent.putExtra(Intent.EXTRA_PROCESS_TEXT, value);
+                webView().getContext().startActivity(intent);
+              }
+            });
+        }
+      }
+      if(mActionMode != null){
+        mActionModeHandler.postDelayed(()->{
+          mActionMode.finish();
+        }, 500);
+      }
+      return true;
     }
 
     protected class RNCWebViewBridge {
