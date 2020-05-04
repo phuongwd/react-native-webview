@@ -14,12 +14,17 @@
 #import "objc/runtime.h"
 
 
-@interface WKWebView (Custom)
+@interface CTWKWebView : WKWebView
+@property(nonatomic, copy) NSArray *contextMenuItems;
 @end
-@implementation WKWebView (Custom)
+@implementation CTWKWebView
+@synthesize contextMenuItems;
 
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender{
-    return NO;
+    if([contextMenuItems count] > 0){
+        return NO;
+    }
+    return [super canPerformAction:action withSender:sender];
 }
 
 @end
@@ -33,7 +38,7 @@ static NSDictionary* customCertificatesForHost;
 // runtime trick to remove WKWebView keyboard default toolbar
 // see: http://stackoverflow.com/questions/19033292/ios-7-uiwebview-keyboard-issue/19042279#19042279
 @interface _SwizzleHelperWK : UIView
-@property (nonatomic, copy) WKWebView *webView;
+@property (nonatomic, copy) CTWKWebView *webView;
 @end
 @implementation _SwizzleHelperWK
 -(id)inputAccessoryView
@@ -61,7 +66,7 @@ static NSDictionary* customCertificatesForHost;
 @property (nonatomic, copy) RCTDirectEventBlock onMessage;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
-@property (nonatomic, copy) WKWebView *webView;
+@property (nonatomic, copy) CTWKWebView *webView;
 @property (nonatomic, copy) RCTDirectEventBlock onContextMenuItemPress;
 @end
 
@@ -303,7 +308,7 @@ static NSDictionary* customCertificatesForHost;
 {
   if (self.window != nil && _webView == nil) {
     WKWebViewConfiguration *wkWebViewConfig = [self setUpWkWebViewConfig];
-    _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    _webView = [[CTWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     [self setBackgroundColor: _savedBackgroundColor];
     _webView.scrollView.delegate = self;
     _webView.UIDelegate = self;
@@ -338,7 +343,7 @@ static NSDictionary* customCertificatesForHost;
 #pragma mark - Start Context Menu
 
 - (void)addCustomContextMenuItem{
-    
+    _webView.contextMenuItems = _contextMenuItems;
     NSMutableArray *menuItems = [NSMutableArray arrayWithCapacity:[_contextMenuItems count]];
     int index = 0;
     for(NSDictionary *item in _contextMenuItems){

@@ -1034,39 +1034,40 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public ActionMode startActionMode(ActionMode.Callback callback, int type) {
       mActionMode =  super.startActionMode(callback, type);
 
-      //clear default menu
-      mActionMode.getMenu().clear();
+      if(mContextMenuItems.size() > 0){
+        //clear default menu
+        mActionMode.getMenu().clear();
 
-      //add menu item - NONE INTENT MENU ITEM
-      int menuItemOrder = 100;
-      for(int i = 0; i < mContextMenuItems.size(); i++){
-        HashMap<String,Object> item = mContextMenuItems.get(i);
-        mActionMode.getMenu().add(Menu.NONE, Integer.valueOf(item.get("index").toString()), menuItemOrder, item.get("title").toString())
-          .setOnMenuItemClickListener(this)
-          .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-        menuItemOrder++;
-      }
-
-      /**
-       * We check the KITKAT because later we is going to use
-       * 'evaluateJavascript' method of WebView to get the selection text
-       * to search. Otherwise we don't need to show menu
-       * THIS IS INTENT MENU ITEM
-       */
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-        for (ResolveInfo resolveInfo : getSupportedActivities()) {
-          Intent intent = createProcessTextIntentForResolveInfo(resolveInfo);
-          mActionMode.getMenu().add(Menu.NONE, Menu.NONE,
-            menuItemOrder,
-            resolveInfo.loadLabel(webView().getContext().getPackageManager()))
-            .setIntent(intent)
+        //add menu item - NONE INTENT MENU ITEM
+        int menuItemOrder = 100;
+        for(int i = 0; i < mContextMenuItems.size(); i++){
+          HashMap<String,Object> item = mContextMenuItems.get(i);
+          mActionMode.getMenu().add(Menu.NONE, Integer.valueOf(item.get("index").toString()), menuItemOrder, item.get("title").toString())
             .setOnMenuItemClickListener(this)
             .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-
           menuItemOrder++;
         }
-      }
 
+        /**
+         * We check the KITKAT because later we is going to use
+         * 'evaluateJavascript' method of WebView to get the selection text
+         * to search. Otherwise we don't need to show menu
+         * THIS IS INTENT MENU ITEM
+         */
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+          for (ResolveInfo resolveInfo : getSupportedActivities()) {
+            Intent intent = createProcessTextIntentForResolveInfo(resolveInfo);
+            mActionMode.getMenu().add(Menu.NONE, Menu.NONE,
+              menuItemOrder,
+              resolveInfo.loadLabel(webView().getContext().getPackageManager()))
+              .setIntent(intent)
+              .setOnMenuItemClickListener(this)
+              .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+
+            menuItemOrder++;
+          }
+        }
+      }
       return mActionMode;
     }
 
