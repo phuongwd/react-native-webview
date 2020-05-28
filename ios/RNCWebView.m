@@ -356,12 +356,9 @@ static NSDictionary* customCertificatesForHost;
 
 - (void)handleLookup{
     [_webView evaluateJavaScript:@"(function(){return window.getSelection().toString()})()" completionHandler:^(id _Nullable result, NSError * _Nullable error) {
-        
-        if ([UIReferenceLibraryViewController dictionaryHasDefinitionForTerm:result]) {
-            UIReferenceLibraryViewController* ref =
-                [[UIReferenceLibraryViewController alloc] initWithTerm:result];
-            [[self topViewController] presentViewController:ref animated:YES completion:nil];
-        }
+      UIReferenceLibraryViewController* ref =
+          [[UIReferenceLibraryViewController alloc] initWithTerm:result];
+      [[self topViewController] presentViewController:ref animated:YES completion:nil];
     }];
 }
 
