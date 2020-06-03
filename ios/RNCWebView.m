@@ -352,6 +352,20 @@ static NSDictionary* customCertificatesForHost;
         index++;
     }
     [UIMenuController sharedMenuController].menuItems = menuItems;
+
+    NSOperatingSystemVersion iOS_11_0_0 = (NSOperatingSystemVersion){11, 0, 0};
+    if(![[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:iOS_11_0_0]){
+        Class viewClass = NSClassFromString(@"WKContentView");
+        if(viewClass){
+            Method originalSelector = class_getInstanceMethod(viewClass, @selector(canPerformAction:withSender:));
+            Method withSelector = class_getInstanceMethod(self.class, @selector(swizzle_canPerformAction:withSender:));
+            method_exchangeImplementations(originalSelector, withSelector);
+        }
+    }
+}
+
+-(BOOL)swizzle_canPerformAction:(SEL)action withSender:(id)sender{
+    return [_webView canPerformAction:action withSender:sender];
 }
 
 - (void)handleLookup{
