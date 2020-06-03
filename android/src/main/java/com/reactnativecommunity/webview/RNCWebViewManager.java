@@ -1028,13 +1028,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         mContextMenuItems.add(editableItem);
       }
     }
-
-
-    @Override
-    public ActionMode startActionMode(ActionMode.Callback callback, int type) {
-      mActionMode =  super.startActionMode(callback, type);
-
-      if(mContextMenuItems.size() > 0){
+    
+    private void addCustomContextMenu(){
+      if(mActionMode != null && mContextMenuItems.size() > 0){
         //clear default menu
         mActionMode.getMenu().clear();
 
@@ -1068,6 +1064,19 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           }
         }
       }
+    }
+
+    @Override
+    public ActionMode startActionMode(ActionMode.Callback callback) {
+      mActionMode =  super.startActionMode(callback);
+      addCustomContextMenu();
+      return mActionMode;
+    }
+
+    @Override
+    public ActionMode startActionMode(ActionMode.Callback callback, int type) {
+      mActionMode =  super.startActionMode(callback, type);
+      addCustomContextMenu();
       return mActionMode;
     }
 
