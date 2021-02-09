@@ -62,7 +62,7 @@ This document lays out the current public properties and methods for the React N
 - [`allowsLinkPreview`](Reference.md#allowsLinkPreview)
 - [`sharedCookiesEnabled`](Reference.md#sharedCookiesEnabled)
 - [`textZoom`](Reference.md#textZoom)
-
+- [`autoManageStatusBarEnabled`](Reference.md#autoManageStatusBarEnabled)
 ## Methods Index
 
 - [`extraNativeComponentConfig`](Reference.md#extranativecomponentconfig)
@@ -1066,6 +1066,22 @@ A Boolean value that determines whether pressing on a link displays a preview of
 | boolean | No       | iOS      |
 
 ---
+
+### `autoManageStatusBarEnabled`
+
+If set to `true`, the status bar will be automatically hidden/shown by WebView, specifically when full screen video is being watched. If `false`, WebView will not manage the status bar at all. The default value is `true`.
+
+| Type    | Required | Platform |
+| ------- | -------- | -------- |
+| boolean | No       | iOS      |
+
+Example:
+
+```javascript
+ <WebView autoManageStatusBarEnabled={false} />
+ ```
+---
+
 
 ### `sharedCookiesEnabled`
 
