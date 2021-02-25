@@ -292,6 +292,7 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   allowsInlineMediaPlayback?: boolean;
   allowsLinkPreview?: boolean;
   automaticallyAdjustContentInsets?: boolean;
+  autoManageStatusBarEnabled?: boolean;
   bounces?: boolean;
   contentInset?: ContentInsetProp;
   contentInsetAdjustmentBehavior?:
@@ -449,6 +450,13 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * @platform ios
    */
   sharedCookiesEnabled?: boolean;
+
+  /**
+   * Set true if StatusBar should be light when user watch video fullscreen.
+   * The default value is `true`.
+   * @platform ios
+   */
+  autoManageStatusBarEnabled?: boolean;
 
   /**
    * A Boolean value that determines whether scrolling is disabled in a particular direction.
