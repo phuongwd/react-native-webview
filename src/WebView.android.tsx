@@ -321,6 +321,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       containerStyle,
       nativeConfig = {},
       contextMenuItems = [],
+      ignoreSslError = false,
       ...otherProps
     } = this.props;
 
@@ -387,6 +388,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         style={webViewStyles}
         contextMenuItems={extractedWebViewMenuItems}
         onContextMenuItemPress={this.onContextMenuItemPress}
+        ignoreSslError={ignoreSslError}
         {...nativeConfig.props}
       />
     );

@@ -612,6 +612,14 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     ((RNCWebView)view).setContextMenuItems(items);
   }
 
+  @ReactProp(name = "ignoreSslError")
+  public void setIgnoreSslError(WebView view, @Nullable Boolean ignoreSslError){
+    RNCWebViewClient client = ((RNCWebView) view).getRNCWebViewClient();
+    if(client != null){
+      client.setIgnoreSslError(ignoreSslError != null && ignoreSslError);
+    }
+  }
+
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
@@ -830,9 +838,14 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     ReadableArray mUrlPrefixesForDefaultIntent;
     protected RNCWebView.ProgressChangedFilter progressChangedFilter = null;
     protected @Nullable String ignoreErrFailedForThisURL = null;
+    protected boolean mIgnoreSslError = false;
 
     public void setIgnoreErrFailedForThisURL(@Nullable String url) {
       ignoreErrFailedForThisURL = url;
+    }
+
+    public void setIgnoreSslError(boolean ignoreSslError){
+      mIgnoreSslError = ignoreSslError;
     }
 
     @Override
@@ -921,6 +934,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     @Override
     public void onReceivedSslError(final WebView webView, final SslErrorHandler handler, final SslError error) {
+        // If trusted the current url we can pass through the error to continue loading the content.
+        if(mIgnoreSslError){
+          handler.proceed();
+          return;
+        }
         // onReceivedSslError is called for most requests, per Android docs: https://developer.android.com/reference/android/webkit/WebViewClient#onReceivedSslError(android.webkit.WebView,%2520android.webkit.SslErrorHandler,%2520android.net.http.SslError)
         // WebView.getUrl() will return the top-level window URL.
         // If a top-level navigation triggers this error handler, the top-level URL will be the failing URL (not the URL of the currently-rendered page).

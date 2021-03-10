@@ -329,6 +329,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   readonly urlPrefixesForDefaultIntent?: string[];
   onContextMenuItemPress?: (event: WebViewContextMenuEvent) => void;
   contextMenuItems?: WebViewContextMenuItem[],
+  ignoreSslError?: boolean;
 }
 
 export declare type ContentInsetAdjustmentBehavior = 'automatic' | 'scrollableAxes' | 'never' | 'always';
@@ -959,6 +960,7 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
 
   onContextMenuItemPress?: (event: WebViewContextMenuEvent) => void;
   contextMenuItems?: WebViewContextMenuItem[];
+  ignoreSslError?: boolean;
 }
 
 export interface WebViewSharedProps extends ViewProps {
