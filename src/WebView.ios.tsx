@@ -15,7 +15,6 @@ import {
   createOnShouldStartLoadWithRequest,
   defaultRenderError,
   defaultRenderLoading,
-  extractWebViewContextMenuItems
 } from './WebViewShared';
 import {
   WebViewErrorEvent,
@@ -30,7 +29,6 @@ import {
   ViewManager,
   State,
   RNCWebViewUIManagerIOS,
-  WebViewContextMenuEvent
 } from './WebViewTypes';
 
 import styles from './WebView.styles';
@@ -265,18 +263,6 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     }
   };
 
-  onContextMenuItemPress = (event: WebViewContextMenuEvent) => {
-    const { nativeEvent: { index } } = event;
-    const { contextMenuItems = [] } = this.props;
-    const menuItem = contextMenuItems[index];
-    if(menuItem){
-      const {onPress} = menuItem;
-      if(onPress){
-        onPress();
-      }
-    }
-  }
-
   componentDidUpdate(prevProps: IOSWebViewProps) {
     this.showRedboxOnPropChanges(prevProps, 'allowsInlineMediaPlayback');
     this.showRedboxOnPropChanges(prevProps, 'incognito');
@@ -308,7 +294,6 @@ class WebView extends React.Component<IOSWebViewProps, State> {
       injectedJavaScriptBeforeContentLoadedForMainFrameOnly = true,
       style,
       containerStyle,
-      contextMenuItems = [],
       ...otherProps
     } = this.props;
 
@@ -341,7 +326,6 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     );
 
     const decelerationRate = processDecelerationRate(decelerationRateProp);
-    const extractedWebViewMenuItems = extractWebViewContextMenuItems(contextMenuItems);
 
     const NativeWebView
       = (nativeConfig.component as typeof NativeWebViewIOS | undefined)
@@ -371,8 +355,6 @@ class WebView extends React.Component<IOSWebViewProps, State> {
         // TODO: find a better way to type this.
         source={resolveAssetSource(this.props.source as ImageSourcePropType)}
         style={webViewStyles}
-        contextMenuItems={extractedWebViewMenuItems}
-        onContextMenuItemPress={this.onContextMenuItemPress}
         {...nativeConfig.props}
       />
     );

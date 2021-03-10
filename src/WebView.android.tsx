@@ -19,7 +19,6 @@ import {
   createOnShouldStartLoadWithRequest,
   defaultRenderError,
   defaultRenderLoading,
-  extractWebViewContextMenuItems
 } from './WebViewShared';
 import {
   WebViewRenderProcessGoneEvent,
@@ -32,7 +31,6 @@ import {
   NativeWebViewAndroid,
   State,
   RNCWebViewUIManagerAndroid,
-  WebViewContextMenuEvent
 } from './WebViewTypes';
 
 import styles from './WebView.styles';
@@ -297,18 +295,6 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
-  onContextMenuItemPress = (event: WebViewContextMenuEvent) => {
-    const { nativeEvent: { index } } = event;
-    const { contextMenuItems = [] } = this.props;
-    const menuItem = contextMenuItems[index];
-    if(menuItem){
-      const {onPress} = menuItem;
-      if(onPress){
-        onPress();
-      }
-    }
-  }
-
   render() {
     const {
       onMessage,
@@ -320,8 +306,6 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       style,
       containerStyle,
       nativeConfig = {},
-      contextMenuItems = [],
-      ignoreSslError = false,
       ...otherProps
     } = this.props;
 
@@ -356,8 +340,6 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       }
     }
 
-    const extractedWebViewMenuItems = extractWebViewContextMenuItems(contextMenuItems);
-
     const NativeWebView
       = (nativeConfig.component as typeof NativeWebViewAndroid) || RNCWebView;
 
@@ -386,9 +368,6 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}
         style={webViewStyles}
-        contextMenuItems={extractedWebViewMenuItems}
-        onContextMenuItemPress={this.onContextMenuItemPress}
-        ignoreSslError={ignoreSslError}
         {...nativeConfig.props}
       />
     );

@@ -67,7 +67,6 @@
 @property (nonatomic, assign) BOOL pullToRefreshEnabled;
 #if !TARGET_OS_OSX
 @property (nonatomic, weak) UIRefreshControl * refreshControl;
-@property (nonatomic, copy) NSArray * _Nullable contextMenuItems;
 #endif
 
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 /* iOS 13 */

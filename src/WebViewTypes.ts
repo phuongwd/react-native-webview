@@ -145,31 +145,6 @@ export interface WebViewRenderProcessGoneDetail {
   didCrash: boolean;
 }
 
-export interface WebViewContextMenu extends WebViewNativeEvent{
-  index: number;
-}
-
-export interface WebViewContextMenuItem{
-  /**
-   * title of menu item
-   */
-  title: string;
-  /**
-   * specify lookup menu item
-   * which is executed from native only on: iOS
-   *
-   * Android will show all the apps which supports lookup the selection text
-   * at the end of menu
-   */
-  lookup?: boolean;
-  /**
-   * handle press event
-   */
-  onPress?: Function;
-}
-
-export type WebViewContextMenuEvent = NativeSyntheticEvent<WebViewContextMenu>
-
 export type WebViewEvent = NativeSyntheticEvent<WebViewNativeEvent>;
 
 export type WebViewProgressEvent = NativeSyntheticEvent<
@@ -327,9 +302,6 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   thirdPartyCookiesEnabled?: boolean;
   messagingModuleName?: string;
   readonly urlPrefixesForDefaultIntent?: string[];
-  onContextMenuItemPress?: (event: WebViewContextMenuEvent) => void;
-  contextMenuItems?: WebViewContextMenuItem[],
-  ignoreSslError?: boolean;
 }
 
 export declare type ContentInsetAdjustmentBehavior = 'automatic' | 'scrollableAxes' | 'never' | 'always';
@@ -360,8 +332,6 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   injectedJavaScriptForMainFrameOnly?: boolean;
   injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: boolean;
   onFileDownload?: (event: FileDownloadEvent) => void;
-  onContextMenuItemPress?: (event: WebViewContextMenuEvent) => void;
-  contextMenuItems?: WebViewContextMenuItem[]
 }
 
 export interface MacOSNativeWebViewProps extends CommonNativeWebViewProps {
@@ -644,9 +614,6 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * If not provided, the default is to let the webview try to render the file.
    */
   onFileDownload?: (event: FileDownloadEvent) => void;
-
-  onContextMenuItemPress?: (event: WebViewContextMenuEvent) => void;
-  contextMenuItems?: WebViewContextMenuItem[]
 }
 
 export interface MacOSWebViewProps extends WebViewSharedProps {
@@ -957,10 +924,6 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * Sets ability to open fullscreen videos on Android devices.
    */
   allowsFullscreenVideo?: boolean;
-
-  onContextMenuItemPress?: (event: WebViewContextMenuEvent) => void;
-  contextMenuItems?: WebViewContextMenuItem[];
-  ignoreSslError?: boolean;
 }
 
 export interface WebViewSharedProps extends ViewProps {
