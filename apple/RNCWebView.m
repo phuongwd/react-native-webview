@@ -24,10 +24,22 @@ static NSURLCredential* clientAuthenticationCredential;
 static NSDictionary* customCertificatesForHost;
 
 #if !TARGET_OS_OSX
+@interface CTWKWebView : WKWebView
+@property(nonatomic, copy) NSArray *contextMenuItems;
+@end
+@implementation CTWKWebView
+@synthesize contextMenuItems;
+- (BOOL)canPerformAction:(SEL)action withSender:(id)sender{
+    if([contextMenuItems count] > 0){
+        return NO;
+    }
+    return [super canPerformAction:action withSender:sender];
+}
+@end
 // runtime trick to remove WKWebView keyboard default toolbar
 // see: http://stackoverflow.com/questions/19033292/ios-7-uiwebview-keyboard-issue/19042279#19042279
 @interface _SwizzleHelperWK : UIView
-@property (nonatomic, copy) WKWebView *webView;
+@property (nonatomic, copy) CTWKWebView *webView;
 @end
 @implementation _SwizzleHelperWK
 -(id)inputAccessoryView
@@ -79,7 +91,8 @@ static NSDictionary* customCertificatesForHost;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
 #if !TARGET_OS_OSX
-@property (nonatomic, copy) WKWebView *webView;
+@property (nonatomic, copy) CTWKWebView *webView;
+@property (nonatomic, copy) RCTDirectEventBlock onContextMenuItemPress;
 #else
 @property (nonatomic, copy) RNCWKWebView *webView;
 #endif // !TARGET_OS_OSX
@@ -146,7 +159,7 @@ static NSDictionary* customCertificatesForHost;
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 /* __IPHONE_13_0 */
     _savedAutomaticallyAdjustsScrollIndicatorInsets = NO;
 #endif
-      
+
   }
 
 #if !TARGET_OS_OSX
@@ -274,7 +287,7 @@ static NSDictionary* customCertificatesForHost;
   if (self.window != nil && _webView == nil) {
     WKWebViewConfiguration *wkWebViewConfig = [self setUpWkWebViewConfig];
 #if !TARGET_OS_OSX
-    _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    _webView = [[CTWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
 #else
     _webView = [[RNCWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
 #endif // !TARGET_OS_OSX
@@ -319,8 +332,88 @@ static NSDictionary* customCertificatesForHost;
     [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
     [self setKeyboardDisplayRequiresUserAction: _savedKeyboardDisplayRequiresUserAction];
     [self visitSource];
+
+    #if !TARGET_OS_OSX
+    [self addCustomContextMenuItem];
+    #endif
   }
 }
+
+#if !TARGET_OS_OSX
+- (void)addCustomContextMenuItem{
+    _webView.contextMenuItems = _contextMenuItems;
+    NSMutableArray *menuItems = [NSMutableArray arrayWithCapacity:[_contextMenuItems count]];
+    int index = 0;
+    for(NSDictionary *item in _contextMenuItems){
+        NSString *sel = [NSString stringWithFormat:@"CTMenuItem_%d", index];
+        [menuItems addObject:[[UIMenuItem alloc] initWithTitle:[item objectForKey:@"title"] action:NSSelectorFromString(sel)]];
+        index++;
+    }
+    [UIMenuController sharedMenuController].menuItems = menuItems;
+    // disable default context menu on iOS lower 11
+    NSOperatingSystemVersion iOS_11_0_0 = (NSOperatingSystemVersion){11, 0, 0};
+    if(![[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:iOS_11_0_0]){
+        Class viewClass = NSClassFromString(@"WKContentView");
+        if(viewClass){
+            Method originalSelector = class_getInstanceMethod(viewClass, @selector(canPerformAction:withSender:));
+            Method withSelector = class_getInstanceMethod(self.class, @selector(swizzle_canPerformAction:withSender:));
+            method_exchangeImplementations(originalSelector, withSelector);
+        }
+    }
+}
+
+- (BOOL)swizzle_canPerformAction:(SEL)action withSender:(id)sender{
+    return [_webView canPerformAction:action withSender:sender];
+}
+
+- (void)handleLookup{
+    [_webView evaluateJavaScript:@"(function(){return window.getSelection().toString()})()" completionHandler:^(id _Nullable result, NSError * _Nullable error) {
+      UIReferenceLibraryViewController* ref =
+          [[UIReferenceLibraryViewController alloc] initWithTerm:result];
+      [[self topViewController] presentViewController:ref animated:YES completion:nil];
+    }];
+}
+
+- (void)tappedCTMenuItem:(NSInteger)index {
+    NSDictionary *itemInfo = [_contextMenuItems objectAtIndex:index];
+    if([[itemInfo objectForKey:@"lookup"] boolValue] == true){
+        [self handleLookup];
+    }else{
+        NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+        [event addEntriesFromDictionary:@{@"index":[NSNumber numberWithLong:index]}];
+        if(_onContextMenuItemPress){
+            _onContextMenuItemPress(event);
+        }
+    }
+}
+
+- (BOOL)canPerformAction:(SEL)action withSender:(id)sender {
+    NSString *sel = NSStringFromSelector(action);
+    NSRange match = [sel rangeOfString:@"CTMenuItem_"];
+    if (match.location == 0) {
+        return YES;
+    }
+    return NO;
+}
+
+- (NSMethodSignature *)methodSignatureForSelector:(SEL)sel {
+    if ([super methodSignatureForSelector:sel]) {
+        return [super methodSignatureForSelector:sel];
+    }
+    return [super methodSignatureForSelector:@selector(tappedCTMenuItem:)];
+}
+
+- (void)forwardInvocation:(NSInvocation *)invocation {
+    NSString *selectorKey = @"CTMenuItem_";
+    NSString *sel = NSStringFromSelector([invocation selector]);
+    NSRange match = [sel rangeOfString:selectorKey];
+    if (match.location == 0) {
+        [self tappedCTMenuItem:[[sel substringFromIndex:[selectorKey length]] integerValue]];
+    } else {
+        [super forwardInvocation:invocation];
+    }
+}
+#endif
 
 // Update webview property when the component prop changes.
 - (void)setAllowsBackForwardNavigationGestures:(BOOL)allowsBackForwardNavigationGestures {

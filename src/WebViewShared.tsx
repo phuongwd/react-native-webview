@@ -4,6 +4,7 @@ import { Linking, View, ActivityIndicator, Text } from 'react-native';
 import {
   OnShouldStartLoadWithRequest,
   ShouldStartLoadRequestEvent,
+  WebViewContextMenuItem
 } from './WebViewTypes';
 import styles from './WebView.styles';
 
@@ -80,9 +81,19 @@ const defaultRenderError = (
   </View>
 );
 
+const extractWebViewContextMenuItems = (contextMenuItems: WebViewContextMenuItem[]): WebViewContextMenuItem[] => {
+  const extractedItems: { title: string; lookup?: boolean | undefined; }[] = [];
+  contextMenuItems.forEach(item => {
+    const { onPress, ...extractedItem } = item;
+    extractedItems.push(extractedItem);
+  })
+  return extractedItems;
+}
+
 export {
   defaultOriginWhitelist,
   createOnShouldStartLoadWithRequest,
   defaultRenderLoading,
   defaultRenderError,
+  extractWebViewContextMenuItems
 };
