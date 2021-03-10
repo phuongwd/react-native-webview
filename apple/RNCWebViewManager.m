@@ -89,6 +89,12 @@ RCT_EXPORT_VIEW_PROPERTY(automaticallyAdjustsScrollIndicatorInsets, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(contentMode, WKContentMode)
 #endif
 
+
+#if !TARGET_OS_OSX
+RCT_EXPORT_VIEW_PROPERTY(contextMenuItems, NSArray)
+RCT_EXPORT_VIEW_PROPERTY(onContextMenuItemPress, RCTDirectEventBlock)
+#endif
+
 /**
  * Expose methods to enable messaging the webview.
  */
